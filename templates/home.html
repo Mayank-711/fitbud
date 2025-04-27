@@ -1,0 +1,555 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Calorie Tracker</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap">
+    <style>
+        :root {
+            --primary-color: #4a6fa5;
+            --secondary-color: #6b8cae;
+            --accent-color: #ff7e5f;
+            --light-color: #f8f9fa;
+            --dark-color: #343a40;
+            --success-color: #28a745;
+            --warning-color: #ffc107;
+            --danger-color: #dc3545;
+            --border-radius: 8px;
+            --box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            --transition: all 0.3s ease;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: #f5f7fa;
+            color: var(--dark-color);
+            line-height: 1.6;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        header h1 {
+            font-size: 2.5rem;
+            color: var(--primary-color);
+            margin-bottom: 5px;
+        }
+        
+        .subtitle {
+            color: var(--secondary-color);
+            font-size: 1rem;
+            font-weight: 500;
+        }
+        
+        .totals-card {
+            background-color: white;
+            border-radius: var(--border-radius);
+            padding: 20px;
+            margin-bottom: 25px;
+            box-shadow: var(--box-shadow);
+        }
+        
+        .totals-card h2 {
+            color: var(--primary-color);
+            margin-bottom: 15px;
+            font-size: 1.5rem;
+        }
+        
+        .totals-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+        }
+        
+        .total-item {
+            background-color: var(--light-color);
+            padding: 15px;
+            border-radius: var(--border-radius);
+            text-align: center;
+        }
+        
+        .total-label {
+            display: block;
+            font-size: 0.9rem;
+            color: var(--secondary-color);
+            margin-bottom: 5px;
+        }
+        
+        .total-value {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: var(--primary-color);
+        }
+        
+        .meal-section {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .meal-card {
+            background-color: white;
+            border-radius: var(--border-radius);
+            padding: 20px;
+            box-shadow: var(--box-shadow);
+        }
+        
+        .meal-card h3 {
+            color: var(--primary-color);
+            margin-bottom: 15px;
+            font-size: 1.3rem;
+        }
+        
+        .input-group {
+            display: flex;
+            margin-bottom: 15px;
+        }
+        
+        .input-group input {
+            flex: 1;
+            padding: 12px 15px;
+            border: 1px solid #ddd;
+            border-radius: var(--border-radius) 0 0 var(--border-radius);
+            font-size: 1rem;
+            transition: var(--transition);
+        }
+        
+        .input-group input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 2px rgba(74, 111, 165, 0.2);
+        }
+        
+        .analyze-btn {
+            padding: 0 20px;
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 0 var(--border-radius) var(--border-radius) 0;
+            cursor: pointer;
+            font-weight: 500;
+            transition: var(--transition);
+        }
+        
+        .analyze-btn:hover {
+            background-color: #3a5a8a;
+        }
+        
+        .nutrition-details {
+            background-color: var(--light-color);
+            border-radius: var(--border-radius);
+            padding: 15px;
+            font-size: 0.9rem;
+            margin-bottom: 10px;
+        }
+        
+        .nutrition-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            padding-bottom: 8px;
+            border-bottom: 1px dashed #ddd;
+        }
+        
+        .nutrition-item:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+            padding-bottom: 0;
+        }
+        
+        .nutrition-label {
+            font-weight: 500;
+            color: var(--secondary-color);
+        }
+        
+        .nutrition-value {
+            font-weight: 600;
+            color: var(--primary-color);
+        }
+        
+        .nutrition-notes {
+            margin-top: 10px;
+            font-style: italic;
+            color: #666;
+            font-size: 0.85rem;
+        }
+        
+        .meal-actions {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .clear-meal-btn {
+            padding: 8px 15px;
+            background-color: var(--danger-color);
+            color: white;
+            border: none;
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            font-weight: 500;
+            transition: var(--transition);
+            font-size: 0.9rem;
+        }
+        
+        .clear-meal-btn:hover {
+            background-color: #c82333;
+        }
+        
+        /* Loading spinner */
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s ease-in-out infinite;
+            margin-left: 10px;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .totals-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .meal-section {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .totals-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .input-group {
+                flex-direction: column;
+            }
+            
+            .input-group input {
+                border-radius: var(--border-radius);
+                margin-bottom: 10px;
+            }
+            
+            .analyze-btn {
+                border-radius: var(--border-radius);
+                padding: 12px;
+            }
+            .loading {
+                border: 4px solid transparent;
+                border-top: 4px solid #3498db;
+                border-radius: 50%;
+                width: 16px;
+                height: 16px;
+                animation: spin 1s linear infinite;
+              }
+              
+              @keyframes spin {
+                0% { transform: rotate(0deg); }
+                100% { transform: rotate(360deg); }
+              }
+              
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>AI Calorie Tracker</h1>
+            <p class="subtitle">Powered by Gemini AI</p>
+        </header>
+
+        <div class="totals-card">
+            <h2>Daily Totals</h2>
+            <div class="totals-grid">
+                <div class="total-item">
+                    <span class="total-label">Calories</span>
+                    <span class="total-value" id="total-calories">0</span>
+                </div>
+                <div class="total-item">
+                    <span class="total-label">Protein</span>
+                    <span class="total-value" id="total-protein">0g</span>
+                </div>
+                <div class="total-item">
+                    <span class="total-label">Carbs</span>
+                    <span class="total-value" id="total-carbs">0g</span>
+                </div>
+                <div class="total-item">
+                    <span class="total-label">Fat</span>
+                    <span class="total-value" id="total-fat">0g</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="meal-section">
+            <div class="meal-card">
+                <h3>Breakfast</h3>
+                <div class="input-group">
+                    <input type="text" id="breakfast-input" placeholder="e.g. 1 anda, 1 katori poha, 1 glass dudh">
+                    <button class="analyze-btn" data-meal="breakfast">Analyze</button>
+                </div>
+                <div class="nutrition-details" id="breakfast-details"></div>
+                <div class="meal-actions">
+                    <button class="clear-meal-btn" data-meal="breakfast">Clear Breakfast</button>
+                </div>
+            </div>
+
+            <div class="meal-card">
+                <h3>Lunch</h3>
+                <div class="input-group">
+                    <input type="text" id="lunch-input" placeholder="e.g. 1 roti, 1 bowl dal, 1 katori sabji">
+                    <button class="analyze-btn" data-meal="lunch">Analyze</button>
+                </div>
+                <div class="nutrition-details" id="lunch-details"></div>
+                <div class="meal-actions">
+                    <button class="clear-meal-btn" data-meal="lunch">Clear Lunch</button>
+                </div>
+            </div>
+
+            <div class="meal-card">
+                <h3>Snacks</h3>
+                <div class="input-group">
+                    <input type="text" id="snack-input" placeholder="e.g. 1 banana, 10 almonds">
+                    <button class="analyze-btn" data-meal="snack">Analyze</button>
+                </div>
+                <div class="nutrition-details" id="snack-details"></div>
+                <div class="meal-actions">
+                    <button class="clear-meal-btn" data-meal="snack">Clear Snacks</button>
+                </div>
+            </div>
+
+            <div class="meal-card">
+                <h3>Dinner</h3>
+                <div class="input-group">
+                    <input type="text" id="dinner-input" placeholder="e.g. 1 bowl khichdi, 1 cup curd">
+                    <button class="analyze-btn" data-meal="dinner">Analyze</button>
+                </div>
+                <div class="nutrition-details" id="dinner-details"></div>
+                <div class="meal-actions">
+                    <button class="clear-meal-btn" data-meal="dinner">Clear Dinner</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // DOM elements
+            const mealInputs = {
+                breakfast: document.getElementById('breakfast-input'),
+                lunch: document.getElementById('lunch-input'),
+                snack: document.getElementById('snack-input'),
+                dinner: document.getElementById('dinner-input')
+            };
+            
+            const mealDetails = {
+                breakfast: document.getElementById('breakfast-details'),
+                lunch: document.getElementById('lunch-details'),
+                snack: document.getElementById('snack-details'),
+                dinner: document.getElementById('dinner-details')
+            };
+            
+            const analyzeButtons = document.querySelectorAll('.analyze-btn');
+            const clearMealButtons = document.querySelectorAll('.clear-meal-btn');
+            
+            // Totals display elements
+            const totalCalories = document.getElementById('total-calories');
+            const totalProtein = document.getElementById('total-protein');
+            const totalCarbs = document.getElementById('total-carbs');
+            const totalFat = document.getElementById('total-fat');
+            
+            // Store meal data
+            let mealsData = {
+                breakfast: null,
+                lunch: null,
+                snack: null,
+                dinner: null
+            };
+            
+            // Initialize
+            updateTotals();
+            
+            // Event listeners
+            analyzeButtons.forEach(button => {
+                button.addEventListener('click', function() {
+                    const mealType = this.getAttribute('data-meal');
+                    analyzeMeal(mealType);
+                });
+            });
+            
+            clearMealButtons.forEach(button => {
+                button.addEventListener('click', function() {
+                    const mealType = this.getAttribute('data-meal');
+                    clearMeal(mealType);
+                });
+            });
+            
+            // Function to analyze a meal
+            async function analyzeMeal(mealType) {
+                const input = mealInputs[mealType].value.trim();
+                if (!input) {
+                    alert('Please enter some food items');
+                    return;
+                }
+                
+                const button = document.querySelector(`.analyze-btn[data-meal="${mealType}"]`);
+                const originalText = button.textContent;
+                button.innerHTML = 'Analyzing <span class="loading"></span>';
+                button.disabled = true;
+                
+                try {
+                    const response = await fetch('/api/analyze-meal/', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRFToken': getCookie('csrftoken')
+                        },
+                        body: JSON.stringify({ query: input })  // <-- change 'meal' to 'query'
+                    });                    
+                     const data = await response.json();
+                    
+
+                    {% comment %} const data = simulateGeminiResponse(input, mealType); {% endcomment %}
+                    
+                    mealsData[mealType] = data;
+                    displayMealDetails(mealType, data);
+                    updateTotals();
+                } catch (error) {
+                    console.error('Error analyzing meal:', error);
+                    alert('Error analyzing meal. Please try again.');
+                } finally {
+                    button.textContent = originalText;
+                    button.disabled = false;
+                }
+            }
+            
+            // Function to display meal details
+            function displayMealDetails(mealType, data) {
+                let html = '';
+                
+                if (data.items && data.items.length > 0) {
+                    data.items.forEach(item => {
+                        html += `
+                            <div class="nutrition-item">
+                                <span class="nutrition-label">Item:</span>
+                                <span class="nutrition-value">${item.item_name}</span>
+                            </div>
+                            <div class="nutrition-item">
+                                <span class="nutrition-label">Quantity:</span>
+                                <span class="nutrition-value">${item.quantity}</span>
+                            </div>
+                            <div class="nutrition-item">
+                                <span class="nutrition-label">Calories:</span>
+                                <span class="nutrition-value">${item.calories}</span>
+                            </div>
+                            <div class="nutrition-item">
+                                <span class="nutrition-label">Protein:</span>
+                                <span class="nutrition-value">${item.protein_grams}g</span>
+                            </div>
+                            <div class="nutrition-item">
+                                <span class="nutrition-label">Carbs:</span>
+                                <span class="nutrition-value">${item.carbohydrates_grams}g</span>
+                            </div>
+                            <div class="nutrition-item">
+                                <span class="nutrition-label">Fat:</span>
+                                <span class="nutrition-value">${item.fat_grams}g</span>
+                            </div>
+                            ${item.notes ? `<div class="nutrition-notes">Note: ${item.notes}</div>` : ''}
+                            <hr style="margin: 10px 0; border: 0; border-top: 1px solid #eee;">
+                        `;
+                    });
+                } else {
+                    html = '<p>No nutrition information available for this meal.</p>';
+                }
+                
+                mealDetails[mealType].innerHTML = html;
+            }
+            
+            // Function to update totals
+            function updateTotals() {
+                let calories = 0;
+                let protein = 0;
+                let carbs = 0;
+                let fat = 0;
+                
+                for (const mealType in mealsData) {
+                    if (mealsData[mealType] && mealsData[mealType].totals) {
+                        calories += mealsData[mealType].totals.total_calories || 0;
+                        protein += mealsData[mealType].totals.total_protein_grams || 0;
+                        carbs += mealsData[mealType].totals.total_carbohydrates_grams || 0;
+                        fat += mealsData[mealType].totals.total_fat_grams || 0;
+                    }
+                }
+                
+                totalCalories.textContent = calories;
+                totalProtein.textContent = `${protein}g`;
+                totalCarbs.textContent = `${carbs}g`;
+                totalFat.textContent = `${fat}g`;
+            }
+            
+            // Function to clear a specific meal
+            function clearMeal(mealType) {
+                mealInputs[mealType].value = '';
+                mealDetails[mealType].innerHTML = '';
+                mealsData[mealType] = null;
+                updateTotals();
+            }
+            
+            // Helper function to get CSRF token (for Django)
+            function getCookie(name) {
+                let cookieValue = null;
+                if (document.cookie && document.cookie !== '') {
+                    const cookies = document.cookie.split(';');
+                    for (let i = 0; i < cookies.length; i++) {
+                        const cookie = cookies[i].trim();
+                        if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                            cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                            break;
+                        }
+                    }
+                }
+                return cookieValue;
+            }
+            
+                
+                // Calculate totals
+                const totals = {
+                    total_calories: responseItems.reduce((sum, item) => sum + item.calories, 0),
+                    total_protein_grams: responseItems.reduce((sum, item) => sum + item.protein_grams, 0),
+                    total_carbohydrates_grams: responseItems.reduce((sum, item) => sum + item.carbohydrates_grams, 0),
+                    total_fat_grams: responseItems.reduce((sum, item) => sum + item.fat_grams, 0)
+                };
+                
+                return {
+                    meal_type: mealType,
+                    input: input,
+                    items: responseItems,
+                    totals: totals
+                };
+            }
+        );
+    </script>
+</body>
+</html>
