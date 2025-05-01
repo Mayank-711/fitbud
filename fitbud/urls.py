@@ -22,4 +22,5 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('', views.home,name='home'),
     path('api/analyze-meal/', views.analyze_meal, name='analyze_meal'),
+    path('api/analyze-workout/',views.analyze_workout,name='analyze_workout'),
 ]

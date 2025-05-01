@@ -6,6 +6,20 @@
     <title>AI Calorie Tracker</title>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap">
     <style>
+        .activity-group {
+            background-color: rgba(74, 111, 165, 0.05);
+            padding: 10px;
+            border-radius: var(--border-radius);
+            margin-bottom: 10px;
+        }
+        
+        .total-calories {
+            font-weight: bold;
+            font-size: 1.1rem;
+            margin-top: 15px;
+            padding-top: 10px;
+            border-top: 2px solid var(--primary-color);
+        }
         :root {
             --primary-color: #4a6fa5;
             --secondary-color: #6b8cae;
@@ -137,7 +151,7 @@
             box-shadow: 0 0 0 2px rgba(74, 111, 165, 0.2);
         }
         
-        .analyze-btn {
+        .analyze-btn, .analyze-workout-btn {
             padding: 0 20px;
             background-color: var(--primary-color);
             color: white;
@@ -148,7 +162,7 @@
             transition: var(--transition);
         }
         
-        .analyze-btn:hover {
+        .analyze-btn:hover, .analyze-workout-btn:hover {
             background-color: #3a5a8a;
         }
         
@@ -196,7 +210,7 @@
             gap: 10px;
         }
         
-        .clear-meal-btn {
+        .clear-meal-btn, .clear-workout-btn {
             padding: 8px 15px;
             background-color: var(--danger-color);
             color: white;
@@ -208,7 +222,7 @@
             font-size: 0.9rem;
         }
         
-        .clear-meal-btn:hover {
+        .clear-meal-btn:hover, .clear-workout-btn:hover {
             background-color: #c82333;
         }
         
@@ -253,7 +267,7 @@
                 margin-bottom: 10px;
             }
             
-            .analyze-btn {
+            .analyze-btn, .analyze-workout-btn {
                 border-radius: var(--border-radius);
                 padding: 12px;
             }
@@ -351,6 +365,18 @@
                     <button class="clear-meal-btn" data-meal="dinner">Clear Dinner</button>
                 </div>
             </div>
+
+            <div class="meal-card">
+                <h3>Workout</h3>
+                <div class="input-group">
+                    <input type="text" id="workout-input" placeholder="e.g. 30 minutes running, 15 mins cycling">
+                    <button class="analyze-workout-btn" id="analyze-workout-btn">Analyze Workout</button>
+                </div>
+                <div class="nutrition-details" id="workout-details"></div>
+                <div class="meal-actions">
+                    <button class="clear-workout-btn" id="clear-workout-btn">Clear Workout</button>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -363,62 +389,72 @@
                 snack: document.getElementById('snack-input'),
                 dinner: document.getElementById('dinner-input')
             };
-            
+
             const mealDetails = {
                 breakfast: document.getElementById('breakfast-details'),
                 lunch: document.getElementById('lunch-details'),
                 snack: document.getElementById('snack-details'),
                 dinner: document.getElementById('dinner-details')
             };
-            
+
             const analyzeButtons = document.querySelectorAll('.analyze-btn');
             const clearMealButtons = document.querySelectorAll('.clear-meal-btn');
-            
-            // Totals display elements
+
             const totalCalories = document.getElementById('total-calories');
             const totalProtein = document.getElementById('total-protein');
             const totalCarbs = document.getElementById('total-carbs');
             const totalFat = document.getElementById('total-fat');
-            
-            // Store meal data
+
+            const workoutInput = document.getElementById('workout-input');
+            const workoutDetails = document.getElementById('workout-details');
+            const analyzeWorkoutBtn = document.querySelector('.analyze-workout-btn');
+            const clearWorkoutBtn = document.querySelector('.clear-workout-btn');
+
             let mealsData = {
                 breakfast: null,
                 lunch: null,
                 snack: null,
                 dinner: null
             };
-            
-            // Initialize
+
+            let workoutData = null;
+
             updateTotals();
-            
-            // Event listeners
+
             analyzeButtons.forEach(button => {
                 button.addEventListener('click', function() {
                     const mealType = this.getAttribute('data-meal');
                     analyzeMeal(mealType);
                 });
             });
-            
+
             clearMealButtons.forEach(button => {
                 button.addEventListener('click', function() {
                     const mealType = this.getAttribute('data-meal');
                     clearMeal(mealType);
                 });
             });
-            
-            // Function to analyze a meal
+
+            analyzeWorkoutBtn.addEventListener('click', function() {
+                analyzeWorkout();
+            });
+
+            clearWorkoutBtn.addEventListener('click', function() {
+                clearWorkout();
+            });
+
             async function analyzeMeal(mealType) {
                 const input = mealInputs[mealType].value.trim();
                 if (!input) {
                     alert('Please enter some food items');
                     return;
                 }
-                
+
                 const button = document.querySelector(`.analyze-btn[data-meal="${mealType}"]`);
                 const originalText = button.textContent;
                 button.innerHTML = 'Analyzing <span class="loading"></span>';
                 button.disabled = true;
-                
+
                 try {
                     const response = await fetch('/api/analyze-meal/', {
                         method: 'POST',
@@ -426,13 +462,10 @@
                             'Content-Type': 'application/json',
                             'X-CSRFToken': getCookie('csrftoken')
                         },
-                        body: JSON.stringify({ query: input })  // <-- change 'meal' to 'query'
-                    });                    
-                     const data = await response.json();
-                    
+                        body: JSON.stringify({ query: input })
+                    });
 
-                    {% comment %} const data = simulateGeminiResponse(input, mealType); {% endcomment %}
-                    
+                    const data = await response.json();
                     mealsData[mealType] = data;
                     displayMealDetails(mealType, data);
                     updateTotals();
@@ -444,11 +477,44 @@
                     button.disabled = false;
                 }
             }
-            
-            // Function to display meal details
+
+            async function analyzeWorkout() {
+                const input = workoutInput.value.trim();
+                if (!input) {
+                    alert('Please enter a workout');
+                    return;
+                }
+
+                const originalText = analyzeWorkoutBtn.textContent;
+                analyzeWorkoutBtn.innerHTML = 'Analyzing <span class="loading"></span>';
+                analyzeWorkoutBtn.disabled = true;
+
+                try {
+                    const response = await fetch('/api/analyze-workout/', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRFToken': getCookie('csrftoken')
+                        },
+                        body: JSON.stringify({ query: input })
+                    });
+
+                    const data = await response.json();
+                    workoutData = data;
+                    displayWorkoutDetails(data);
+                    updateTotals();
+                } catch (error) {
+                    console.error('Error analyzing workout:', error);
+                    alert('Error analyzing workout. Please try again.');
+                } finally {
+                    analyzeWorkoutBtn.textContent = originalText;
+                    analyzeWorkoutBtn.disabled = false;
+                }
+            }
+
             function displayMealDetails(mealType, data) {
                 let html = '';
-                
+
                 if (data.items && data.items.length > 0) {
                     data.items.forEach(item => {
                         html += `
@@ -483,41 +549,113 @@
                 } else {
                     html = '<p>No nutrition information available for this meal.</p>';
                 }
-                
+
                 mealDetails[mealType].innerHTML = html;
             }
+
+            function displayWorkoutDetails(data) {
+                let html = '';
             
-            // Function to update totals
+                if (data.activities && data.activities.length > 0) {
+                    // Add user profile info if available
+                    if (data.user_profile) {
+                        html += `
+                            <div class="nutrition-item">
+                                <span class="nutrition-label">User Weight:</span>
+                                <span class="nutrition-value">${data.user_profile.weight_kg} kg</span>
+                            </div>
+                            <div class="nutrition-item">
+                                <span class="nutrition-label">User Height:</span>
+                                <span class="nutrition-value">${data.user_profile.height_cm} cm</span>
+                            </div>
+                            <hr style="margin: 10px 0;">
+                        `;
+                    }
+            
+                    // Add each activity
+                    data.activities.forEach(activity => {
+                        html += `
+                            <div class="activity-group">
+                                <div class="nutrition-item">
+                                    <span class="nutrition-label">Exercise:</span>
+                                    <span class="nutrition-value">${activity.name}</span>
+                                </div>
+                                ${activity.details ? `
+                                <div class="nutrition-item">
+                                    <span class="nutrition-label">Details:</span>
+                                    <span class="nutrition-value">${activity.details}</span>
+                                </div>` : ''}
+                                {% comment %} <div class="nutrition-item">
+                                    <span class="nutrition-label">Duration:</span>
+                                    <span class="nutrition-value">${activity.duration}</span>
+                                </div> {% endcomment %}
+                                <div class="nutrition-item">
+                                    <span class="nutrition-label">Calories:</span>
+                                    <span class="nutrition-value">${activity.calories_burned}</span>
+                                </div>
+                                <hr style="margin: 10px 0;">
+                            </div>
+                        `;
+                    });
+            
+                    // Add total calories
+                    html += `
+                        <div class="nutrition-item total-calories">
+                            <span class="nutrition-label">Total Calories Burned:</span>
+                            <span class="nutrition-value">${data.total_calories_burned}</span>
+                        </div>
+                    `;
+                } else {
+                    html = '<p>No workout data available.</p>';
+                }
+            
+                workoutDetails.innerHTML = html;
+            }
+
             function updateTotals() {
-                let calories = 0;
-                let protein = 0;
-                let carbs = 0;
-                let fat = 0;
-                
+                let totalCaloriesVal = 0;
+                let totalProteinVal = 0;
+                let totalCarbsVal = 0;
+                let totalFatVal = 0;
+
                 for (const mealType in mealsData) {
-                    if (mealsData[mealType] && mealsData[mealType].totals) {
-                        calories += mealsData[mealType].totals.total_calories || 0;
-                        protein += mealsData[mealType].totals.total_protein_grams || 0;
-                        carbs += mealsData[mealType].totals.total_carbohydrates_grams || 0;
-                        fat += mealsData[mealType].totals.total_fat_grams || 0;
+                    const meal = mealsData[mealType];
+                    if (meal && meal.items) {
+                        meal.items.forEach(item => {
+                            totalCaloriesVal += item.calories;
+                            totalProteinVal += item.protein_grams;
+                            totalCarbsVal += item.carbohydrates_grams;
+                            totalFatVal += item.fat_grams;
+                        });
                     }
                 }
-                
-                totalCalories.textContent = calories;
-                totalProtein.textContent = `${protein}g`;
-                totalCarbs.textContent = `${carbs}g`;
-                totalFat.textContent = `${fat}g`;
+
+                if (workoutData && workoutData.activities) {
+                    workoutData.activities.forEach(activity => {
+                        totalCaloriesVal -= activity.calories_burned;
+                    });
+                }
+
+                totalCalories.textContent = totalCaloriesVal.toFixed(2);
+                totalProtein.textContent = totalProteinVal.toFixed(2) + 'g';
+                totalCarbs.textContent = totalCarbsVal.toFixed(2) + 'g';
+                totalFat.textContent = totalFatVal.toFixed(2) + 'g';
             }
-            
-            // Function to clear a specific meal
+
             function clearMeal(mealType) {
                 mealInputs[mealType].value = '';
                 mealDetails[mealType].innerHTML = '';
                 mealsData[mealType] = null;
                 updateTotals();
             }
-            
-            // Helper function to get CSRF token (for Django)
+
+            function clearWorkout() {
+                workoutInput.value = '';
+                workoutDetails.innerHTML = '';
+                workoutData = null;
+                updateTotals();
+            }
+
             function getCookie(name) {
                 let cookieValue = null;
                 if (document.cookie && document.cookie !== '') {
@@ -532,24 +670,7 @@
                 }
                 return cookieValue;
             }
-            
-                
-                // Calculate totals
-                const totals = {
-                    total_calories: responseItems.reduce((sum, item) => sum + item.calories, 0),
-                    total_protein_grams: responseItems.reduce((sum, item) => sum + item.protein_grams, 0),
-                    total_carbohydrates_grams: responseItems.reduce((sum, item) => sum + item.carbohydrates_grams, 0),
-                    total_fat_grams: responseItems.reduce((sum, item) => sum + item.fat_grams, 0)
-                };
-                
-                return {
-                    meal_type: mealType,
-                    input: input,
-                    items: responseItems,
-                    totals: totals
-                };
-            }
-        );
+        });
     </script>
 </body>
 </html>
